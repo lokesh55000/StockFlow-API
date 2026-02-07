@@ -101,18 +101,6 @@ Structuring backend projects for scalability
 
 Working with EF Core Migrations & Seed Data
 
-🔮 Future Enhancements
-
-JWT Authentication & Role-based Authorization
-
-Pagination, filtering, and sorting
-
-Swagger documentation improvements
-
-Logging with Serilog / Winston-style logging
-
-Unit testing with xUnit
-
 👨‍💻 Author
 
 Lokesh Bisht

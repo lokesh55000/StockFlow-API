@@ -13,31 +13,63 @@ namespace StockFlow.API.Controllers
         private readonly AppDbContext _context;
         private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(
-            AppDbContext context,
-            ILogger<ProductsController> logger)
+        public ProductsController(AppDbContext context, ILogger<ProductsController> logger)
         {
             _context = context;
             _logger = logger;
         }
 
+        // GET /api/products?search=&minPrice=&maxPrice=&pageNumber=&pageSize=
         [HttpGet]
-        public async Task<IActionResult> GetProducts()
+        public async Task<IActionResult> GetProducts(
+            [FromQuery] string? search,
+            [FromQuery] decimal? minPrice,
+            [FromQuery] decimal? maxPrice,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var products = await _context.Products.ToListAsync();
-            return Ok(products);
+            var query = _context.Products
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+                query = query.Where(p => p.Name.Contains(search));
+
+            if (minPrice.HasValue)
+                query = query.Where(p => p.Price >= minPrice.Value);
+
+            if (maxPrice.HasValue)
+                query = query.Where(p => p.Price <= maxPrice.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var products = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                totalCount,
+                pageNumber,
+                pageSize,
+                data = products
+            });
         }
 
+        // GET /api/products/low-stock
         [HttpGet("low-stock")]
         public async Task<IActionResult> GetLowStockProducts()
         {
             var products = await _context.Products
+                .AsNoTracking()
                 .Where(p => p.StockQuantity < 10)
                 .ToListAsync();
 
             return Ok(products);
         }
 
+        // POST /api/products
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromBody] CreateProductDto dto)
         {
@@ -54,11 +86,11 @@ namespace StockFlow.API.Controllers
             return CreatedAtAction(nameof(GetProducts), product);
         }
 
+        // PUT /api/products/{id}/stock
         [HttpPut("{id}/stock")]
         public async Task<IActionResult> UpdateProductStock(int id, [FromBody] int stockQuantity)
         {
             var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-
             if (product == null)
                 return NotFound("Product not found");
 
@@ -68,6 +100,7 @@ namespace StockFlow.API.Controllers
             return Ok(product);
         }
 
+        // POST /api/products/{id}/restock
         [HttpPost("{id}/restock")]
         public async Task<IActionResult> RestockProduct(int id, [FromBody] RestockProductDto dto)
         {
@@ -95,10 +128,8 @@ namespace StockFlow.API.Controllers
             {
                 message = "Product restocked successfully",
                 productId = product.Id,
-                newStock = product.StockQuantity,
-                supplier = supplier.Name
+                newStock = product.StockQuantity
             });
         }
     }
 }
-

@@ -38,11 +38,19 @@ namespace StockFlow.API.Controllers
 
         // GET /api/suppliers
         [HttpGet]
-        public async Task<IActionResult> GetSuppliers()
+        public async Task<IActionResult> GetSuppliers([FromQuery] bool? activeOnly)
         {
-            var suppliers = await _context.Suppliers.ToListAsync();
+            var query = _context.Suppliers
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (activeOnly == true)
+                query = query.Where(s => s.IsActive);
+
+            var suppliers = await query.ToListAsync();
             return Ok(suppliers);
         }
+
 
         // GET /api/suppliers/{id}
         [HttpGet("{id}")]

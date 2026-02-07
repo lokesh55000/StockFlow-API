@@ -24,11 +24,13 @@ namespace StockFlow.API.Controllers
             return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
         }
 
-        // GET /api/orders
+        // GET /api/orders?pageNumber=&pageSize=
         [HttpGet]
-        public async Task<IActionResult> GetOrders()
+        public async Task<IActionResult> GetOrders(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var orders = await _orderService.GetAllOrdersAsync();
+            var orders = await _orderService.GetAllOrdersAsync(pageNumber, pageSize);
             return Ok(orders);
         }
 
@@ -37,18 +39,22 @@ namespace StockFlow.API.Controllers
         public async Task<IActionResult> GetOrderById(int id)
         {
             var order = await _orderService.GetOrderByIdAsync(id);
-
             if (order == null)
                 return NotFound("Order not found");
 
             return Ok(order);
         }
 
-        // GET /api/orders/status/{status}
+        // GET /api/orders/status/{status}?pageNumber=&pageSize=
         [HttpGet("status/{status}")]
-        public async Task<IActionResult> GetOrdersByStatus(OrderStatus status)
+        public async Task<IActionResult> GetOrdersByStatus(
+            OrderStatus status,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var orders = await _orderService.GetOrdersByStatusAsync(status);
+            var orders = await _orderService
+                .GetOrdersByStatusAsync(status, pageNumber, pageSize);
+
             return Ok(orders);
         }
 
